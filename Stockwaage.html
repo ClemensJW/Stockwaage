@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesicherte Seite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #lockScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #protectedContent {
+            display: none;
+        }
+        #blockedScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="lockScreen">
+        <h2>Geben Sie den Code ein</h2>
+        <input type="password" id="codeInput" placeholder="Code eingeben">
+        <button onclick="checkCode()">Öffnen</button>
+        <p id="error" style="color: red; display: none;">Falscher Code!</p>
+        <p id="attempts" style="color: red;"></p>
+    </div>
+
+    <div id="blockedScreen">
+        <h2>Zu viele Fehlversuche</h2>
+        <p>Die Seite ist für 12 Stunden gesperrt.</p>
+    </div>
+
+    <div id="protectedContent">
+        <h1></h1>
+        <p></p>
+    </div>
+
+    <script>
+        // Verschlüsselter Code (in diesem Beispiel Base64-verschlüsselt)
+        const encryptedCode = "MTc4MQ=="; // Base64 von 
+        
+        // Verschlüsselter Inhalt
+        const encryptedTitle = "V2lsbGtvbW1lbiBhdWYgZGVyIGdlc2ljaGVydGVuIFNlaXRl"; // Base64 von 'Willkommen auf der gesicherten Seite'
+        const encryptedContent = "RGllcyBpc3QgaW4gZ2VzY2h1ZHRlciBJbmhhbHQu"; // Base64 von 'Dies ist ein geschützter Inhalt.'
+
+        let attempts = localStorage.getItem('attempts') ? parseInt(localStorage.getItem('attempts')) : 0;
+        let lockTime = localStorage.getItem('lockTime') ? parseInt(localStorage.getItem('lockTime')) : null;
+
+        function decodeBase64(encodedStr) {
+            return atob(encodedStr);
+        }
+
+        function checkCode() {
+            if (lockTime && Date.now() < lockTime) {
+                showBlockedScreen();
+                return;
+            }
+
+            var code = document.getElementById('codeInput').value;
+            var encodedInput = btoa(code); // Benutzereingabe verschlüsseln (Base64)
+            
+            if (encodedInput === encryptedCode) {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('protectedContent').style.display = 'block';
+                
+                // Entschlüsseln und anzeigen des Inhalts
+                document.getElementById('protectedContent').querySelector('h1').textContent = decodeBase64(encryptedTitle);
+                document.getElementById('protectedContent').querySelector('p').textContent = decodeBase64(encryptedContent);
+
+                // Reset attempts
+                localStorage.removeItem('attempts');
+                localStorage.removeItem('lockTime');
+            } else {
+                attempts++;
+                localStorage.setItem('attempts', attempts);
+                if (attempts >= 3) {
+                    lockTime = Date.now() + 12 * 60 * 60 * 1000; // 12 Stunden in Millisekunden
+                    localStorage.setItem('lockTime', lockTime);
+                    showBlockedScreen();
+                } else {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('attempts').textContent = `Versuche verbleibend: ${3 - attempts}`;
+                }
+            }
+        }
+
+        function showBlockedScreen() {
+            document.getElementById('lockScreen').style.display = 'none';
+            document.getElementById('blockedScreen').style.display = 'flex';
+        }
+
+        // Initialisierung
+        if (lockTime && Date.now() < lockTime) {
+            showBlockedScreen();
+        } else {
+            localStorage.removeItem('attempts');
+            localStorage.removeItem('lockTime');
+        }
+    </script>
+</body>
+</html>
